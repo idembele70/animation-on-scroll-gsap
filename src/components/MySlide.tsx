@@ -11,7 +11,7 @@ import Slider, { Settings } from "react-slick";
 import "slick-carousel/slick/slick-theme.css";
 import "slick-carousel/slick/slick.css";
 import styled from "styled-components";
-
+import VisibilitySensor from "react-visibility-sensor";
 const Container = styled.div``;
 interface SlideProps {
   bgUrl: string;
@@ -21,6 +21,8 @@ const Slide = styled.div<SlideProps>`
   width: 100vw;
   background-image: url(${({ bgUrl }) => bgUrl});
   background-size: cover;
+  transform: translateY(100%)
+  opacity:0;
 `;
 const SlideChild = styled.div`
   height: 200px;
@@ -31,7 +33,7 @@ const SlideChild = styled.div`
 `;
 const MySlide = () => {
   const settings: Settings = {
-    fade: true,
+    // fade: true,
     infinite: true,
     speed: 1000,
     autoplay: true,
@@ -62,34 +64,24 @@ const MySlide = () => {
     []
   );
   const containerEl = useRef<HTMLDivElement>(null);
-  React.useEffect(() => {
-    gsap.to(".slick-slide", {
-      opacity: 1,
-      y: 0,
-      duration: 1,
-      scrollTrigger: {
-        trigger: ".slick-slide",
-        start: "top center",
-        end: "bottom 60%",
-        onEnter: () => console.log("entered"),
-      },
-    });
-  }, []);
-
   return (
     <Container ref={containerEl}>
       <Slider className="container" {...settings} ref={slideEl}>
-        {sliderItems.map(({ title }, idx) => (
-          <Slide
-            bgUrl={`${process.env.PUBLIC_URL}/assets/carousel-${idx + 1}.jpg`}
-          >
-            <SlideChild className="slick-slide" />
-          </Slide>
-        ))}
+        <SlideItem idx={1} />
+        <SlideItem idx={2} />
       </Slider>
     </Container>
   );
 };
+
+/* 
+
+{sliderItems.map(({ title }, idx) => (
+          <Slide
+            bgUrl={`${process.env.PUBLIC_URL}/assets/carousel-${idx + 1}.jpg`}
+          />
+))}
+*/
 
 export default MySlide;
 
@@ -98,23 +90,32 @@ interface SlideItemProps {
 }
 const SlideItem = ({ idx }: SlideItemProps) => {
   const slideEl = useRef<HTMLDivElement>(null);
-  useLayoutEffect(() => {
-    const tl = gsap.timeline({
-      scrollTrigger: {
-        trigger: slideEl.current,
-        start: "top-=200% center",
-      },
-    });
-    tl.to(slideEl.current, {
-      opacity: 1,
-      y: 0,
-      onStart: () => console.log("end"),
-    });
-  }, []);
+  const [isVisibile, setisVisibile] = useState<number>(0);
+  const onChange = (isInViewport: boolean) => {
+    if (isInViewport) setisVisibile(isVisibile + 1);
+  };
+  React.useLayoutEffect(() => {
+    if (isVisibile === 1) {
+      console.log("first", idx);
+      gsap.to(".child", {
+        opacity: 1,
+        y: 0,
+        scrollTrigger: {
+          trigger: ".slidered",
+          start: "top-=100% center",
+        },
+      });
+    }
+  }, [isVisibile]);
   return (
-    <Slide
-      ref={slideEl}
-      bgUrl={`${process.env.PUBLIC_URL}/assets/carousel-${idx + 1}.jpg`}
-    />
+    <VisibilitySensor onChange={onChange}>
+      <Slide
+        className="slidered"
+        ref={slideEl}
+        bgUrl={`${process.env.PUBLIC_URL}/assets/carousel-${idx}.jpg`}
+      >
+        {isVisibile ? <SlideChild className="child" /> : null}
+      </Slide>
+    </VisibilitySensor>
   );
 };
